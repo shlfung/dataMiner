@@ -295,6 +295,7 @@ def analyzer(rank, name, path_to_summary_logs, path_to_metaData, path_to_ofr_res
     
 
 if __name__=='__main__':
+    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
     #temp = metaReader('./input/454_sample_summary_with_climate.csv')
     #temp2 = summary_log_reader('./rs75 Summary Log/', 'Staphylococcus aureus', 'species')
     #temp3 = oligoFishingReader('./input/Streptococcus_spp.Streptococcus_spp.txt.withmeta.fna.fasta')

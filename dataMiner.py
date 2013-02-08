@@ -1,5 +1,7 @@
 # By Stephen Fung
-# The script reads the OFP result and Automated ID result based on a given rank and a name. It outputs the the data into a CSV file
+# The script reads the Oligo Fishing Pipeline (OFP) result and Automated Identification (Auto ID) result based on a given rank and a name.
+# It outputs the Auto ID and OFP data and return the climate, geography...etc in a csv file that can be opened in MS Excel by the biologists
+# The script requires scipy, numpy, biopython and pandas to be installed with python 2.7
 
 
 import csv
@@ -17,13 +19,9 @@ from datetime import datetime
 
 
 # The metaReader function reads the metaData File and return multiple dictionaries:
+# The dictionaries uses Sample ID as keys for the relevant information
 # CSV File --> Dictionaries
 def metaReader(metaData):
-
-    #Begin Reading CSV File
-    metaDataFile = open(metaData, "rb")
-    metaDataReader = csv.reader(metaDataFile, delimiter=",")
-    metaDataHeader = metaDataReader.next() #Skip the Header
 
     SFF_MID_2_SampleID = {} # SFF_MID_2_Sample for finding out Sample ID using SFF.MID as keys
     SampleID_2_Collector = {}   # SampleID_2_Collector for finding out Collector using Sample ID as keys
@@ -39,45 +37,47 @@ def metaReader(metaData):
     SampleID_2_WindDir = {}   # SampleID_2_WindDir for the wind direction using Sample ID as keys
     SampleID_2_MaxWindSpd = {}  # SampleID_2_MaxWindSpd for daily maximum wind speed using Sample ID as keys
 
-    
-    
-    #Iterate over the CSV file, read it row by row, and store the information to the appropriate dictionaries
-    for row in metaDataReader:
-        SFF_MID = str(row[3]) + "." + 'MID' + str(row[6])
-        SFF_MID_2_SampleID[SFF_MID] = row[7] #Generate the SFF.MID using row[3] and row[6]
-        SampleID_2_Collector[row[7]] = row[8]
-        SampleID_2_Year[row[7]] = row[9]
-        SampleID_2_Week[row[7]] = row[10]
-        SampleID_2_City[row[7]] = row[13]
-        SampleID_2_Province[row[7]] = row[14]
-        try:
-            SampleID_2_Dates[row[7]] = str(row[33]) + '-' + str(row[9])
-        except IndexError:
-            pass
-        try:
-            SampleID_2_MaxTemp[row[7]] = row[34]
-        except IndexError:
-            pass
-        try:
-            SampleID_2_MinTemp[row[7]] = row[35]
-        except IndexError:
-            pass
-        try:
-            SampleID_2_MeanTemp[row[7]] = row[36]
-        except IndexError:
-            pass
-        try:
-            SampleID_2_Percipitation[row[7]] = row[41]
-        except IndexError:
-            pass
-        try:
-            SampleID_2_WindDir[row[7]] = row[43]
-        except IndexError:
-            pass
-        try:
-            SampleID_2_MaxWindSpd[row[7]] = row[44]
-        except IndexError:
-            pass
+    #Begin Reading CSV File
+    with open(metaData, "rb") as metaDataFile:
+        metaDataReader = csv.reader(metaDataFile, delimiter=",")
+        metaDataHeader = metaDataReader.next() #Skip the Header
+        #Iterate over the metaData file, read it row by row, and store the information to the appropriate dictionaries using either SFF_MID as keys or Sample ID as keys
+        for row in metaDataReader:
+            SFF_MID = str(row[3]) + "." + 'MID' + str(row[6])
+            SFF_MID_2_SampleID[SFF_MID] = row[7] #Generate the SFF.MID using row[3] and row[6]
+            SampleID_2_Collector[row[7]] = row[8]
+            SampleID_2_Year[row[7]] = row[9]
+            SampleID_2_Week[row[7]] = row[10]
+            SampleID_2_City[row[7]] = row[13]
+            SampleID_2_Province[row[7]] = row[14]
+            try:
+                SampleID_2_Dates[row[7]] = str(row[33]) + '-' + str(row[9])
+            except IndexError:
+                pass
+            try:
+                SampleID_2_MaxTemp[row[7]] = row[34]
+            except IndexError:
+                pass
+            try:
+                SampleID_2_MinTemp[row[7]] = row[35]
+            except IndexError:
+                pass
+            try:
+                SampleID_2_MeanTemp[row[7]] = row[36]
+            except IndexError:
+                pass
+            try:
+                SampleID_2_Percipitation[row[7]] = row[41]
+            except IndexError:
+                pass
+            try:
+                SampleID_2_WindDir[row[7]] = row[43]
+            except IndexError:
+                pass
+            try:
+                SampleID_2_MaxWindSpd[row[7]] = row[44]
+            except IndexError:
+                pass
         
     return SFF_MID_2_SampleID, SampleID_2_Collector, SampleID_2_Year, SampleID_2_Week, SampleID_2_City, SampleID_2_Province, SampleID_2_Dates, SampleID_2_MaxTemp, SampleID_2_MinTemp, SampleID_2_MeanTemp, SampleID_2_Percipitation, SampleID_2_WindDir, SampleID_2_MaxWindSpd
 
@@ -93,14 +93,13 @@ def summary_log_reader(summarylogs, name, rank):
     # Read each file of the summary log
     for aFile in listOfSummaryLogs:
         fileName = str(aFile)
-        print 'Reading', fileName
+        print 'Reading', fileName #Tells the user which file it is reading right now.
         sep = '.'
         MIDNumber = fileName.split(sep)[2]
-        #MID = re.sub("[^0-9]", "", MID)
         MIDNumber = str(MIDNumber).strip()   #Extract the SFF.MID number from the file name
         aSummaryLogFile = open(aFile, "rb")
         aReader = csv.reader(aSummaryLogFile, delimiter = "\t")
-        # Check if each row in a file has a matching name and rank with the input
+        # Check if each row in a file has a matching name and rank with the input from the user
         for row in aReader:
             if rank == 'kingdom':
                 try:
@@ -188,7 +187,7 @@ def summary_log_reader(summarylogs, name, rank):
 # The oligoFishingReader function reads the output from the Oligo Fishing Pipeline (OFP) and stores the Sample ID number of each sequence to a list
 # Text in fasta format --> List
 def oligoFishingReader(ofrFile):
-    
+    print 'Reading Oligo Fishing Experimenta Data...'
     seqRecord = SeqIO.parse(ofrFile, "fasta") #Using Biopython module to parse the fasta file
 
     listOfSampleIDs = []
@@ -229,11 +228,10 @@ def analyzer(rank, name, path_to_summary_logs, path_to_metaData, path_to_ofr_res
 
     startTime = datetime.now()
     print 'Now opening all the summary logs and store to memory'
-    
+    #Call summary_log_reader function to read all the summary logs using the rank and name
     summaryLogs = summary_log_reader(path_to_summary_logs, name, rank)
-    
-    listOfOrfElements = oligoFishingReader(path_to_ofr_result)
-    
+    #Call oligoFishingReader to read the results from the oligo fishing experiment data
+    listOfOrfElements = oligoFishingReader(path_to_ofr_result) 
     multipleDicts = metaReader(path_to_metaData) 
     metaSampleIDs = multipleDicts[0]
     metaCollectors = multipleDicts[1]
@@ -249,10 +247,9 @@ def analyzer(rank, name, path_to_summary_logs, path_to_metaData, path_to_ofr_res
     metaWindDir = multipleDicts[11]
     metaMaxWindSpd = multipleDicts[12]
 
-    # Here we convert the list of SFF.MID from the summary_log_reader function to a list of Sample IDs
+    # Convert the list of SFF.MID from the summary_log_reader function to a list of Sample IDs
     listOfAutoElements = []
     for i in summaryLogs:
-        #print row
         try: 
             aSampleID = metaSampleIDs[i]
             listOfAutoElements.append(aSampleID)   
@@ -295,23 +292,20 @@ def analyzer(rank, name, path_to_summary_logs, path_to_metaData, path_to_ofr_res
     
 
 if __name__=='__main__':
-    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-    #temp = metaReader('./input/454_sample_summary_with_climate.csv')
-    #temp2 = summary_log_reader('./rs75 Summary Log/', 'Staphylococcus aureus', 'species')
-    #temp3 = oligoFishingReader('./input/Streptococcus_spp.Streptococcus_spp.txt.withmeta.fna.fasta')
-##    item1 = analyzer('species', 'Staphylococcus aureus', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_aureus.Staphylococcus_aureus.txt.withmeta.fna.fasta', 'No')
-##    item2 = analyzer('species', 'Bacillus anthracis', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
-##    item3 = analyzer('species', 'Bacillus herbersteinensis', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
-##    item4 = analyzer('species', 'Staphylococcus epidermidis', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_epidermidis.Staphylococcus_epidermidis.txt.withmeta.fna.fasta', 'No')
-##    item5 = analyzer('species', 'Clostridium botulinum', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Clostridium_botulinum.Clostridium_botulinum.txt.withmeta.fna.fasta', 'No')
-##    item6 = analyzer('species', 'Clostridium perfringens', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Clostridium_perfringens.Clostridium_perfringens.txt.withmeta.fna.fasta', 'No')
-##    item7 = analyzer('phylum', 'Firmicutes', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Firmicutes_oligo1.Firmicutes.txt.withmeta.fna.fasta', 'No')
-##    item8 = analyzer('genus', 'Mycobacterium', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Mycobacterium_spp.Mycobacterium_spp.txt.withmeta.fna.fasta', 'No')
-##    item9 = analyzer('genus', 'Streptococcus', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Streptococcus_spp.Streptococcus_spp.txt.withmeta.fna.fasta', 'No')
-##    item10 = analyzer('genus', 'Bacillus', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Bacillus_spp.Bacillus_spp.txt.withmeta.fna.fasta', 'No')
-##    item11 = analyzer('genus', 'Staphylococcus', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_spp.Staphylococcus_spp.txt.withmeta.fna.fasta', 'No')
-##    item12 = analyzer('genus', 'Rickettsia', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Rickettsia_spp.Rickettsia_spp.txt.withmeta.fna.fasta', 'No')
-    item13 = analyzer('genus', 'Clostridium', './rs75 Summary Log/', './input/454_sample_summary_with_climate.csv', './input/Clostridium_spp.Clostridium_spp.txt.withmeta.fna.fasta', 'No')
+##    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    item1 = analyzer('species', 'Staphylococcus aureus', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_aureus.Staphylococcus_aureus.txt.withmeta.fna.fasta', 'No')
+##    item2 = analyzer('species', 'Bacillus anthracis', './rs75_Summary_Log//', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
+##    item3 = analyzer('species', 'Bacillus herbersteinensis', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
+    item4 = analyzer('species', 'Staphylococcus epidermidis', './rs75_Summary_Log//', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_epidermidis.Staphylococcus_epidermidis.txt.withmeta.fna.fasta', 'No')
+##    item5 = analyzer('species', 'Clostridium botulinum', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Clostridium_botulinum.Clostridium_botulinum.txt.withmeta.fna.fasta', 'No')
+##    item6 = analyzer('species', 'Clostridium perfringens', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Clostridium_perfringens.Clostridium_perfringens.txt.withmeta.fna.fasta', 'No')
+##    item7 = analyzer('phylum', 'Firmicutes', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Firmicutes_oligo1.Firmicutes.txt.withmeta.fna.fasta', 'No')
+##    item8 = analyzer('genus', 'Mycobacterium', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Mycobacterium_spp.Mycobacterium_spp.txt.withmeta.fna.fasta', 'No')
+    item9 = analyzer('genus', 'Streptococcus', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Streptococcus_spp.Streptococcus_spp.txt.withmeta.fna.fasta', 'No')
+    item10 = analyzer('genus', 'Bacillus', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Bacillus_spp.Bacillus_spp.txt.withmeta.fna.fasta', 'No')
+##    item11 = analyzer('genus', 'Staphylococcus', './rs75_Summary_Log//', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_spp.Staphylococcus_spp.txt.withmeta.fna.fasta', 'No')
+##    item12 = analyzer('genus', 'Rickettsia', './rs75_Summary_Log//', './input/454_sample_summary_with_climate.csv', './input/Rickettsia_spp.Rickettsia_spp.txt.withmeta.fna.fasta', 'No')
+##    item13 = analyzer('genus', 'Clostridium', './rs75_Summary_Log/', './input/454_sample_summary_with_climate.csv', './input/Clostridium_spp.Clostridium_spp.txt.withmeta.fna.fasta', 'No')
 
 
 

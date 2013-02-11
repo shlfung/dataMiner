@@ -10,8 +10,8 @@ import sys
 import glob
 import os
 import math
-import collections
-#from collections import Counter
+from collections import Counter
+from collections import defaultdict
 from datetime import datetime
 import pandas as pd
 import numpy as np
@@ -24,20 +24,8 @@ from Bio import SeqIO
 # CSV File --> Dictionaries
 def meta_reader(meta_data):
 
-    sff_mid_2_sample_id = {} # sff_mid_2_Sample for finding out Sample ID using SFF.MID as keys
-    sample_id_2_collector = {}   # sample_id_2_collector for finding out Collector using Sample ID as keys
-    sample_id_2_year = {}    # sample_id_2_year for finding out Years using Sample ID as keys
-    sample_id_2_week = {}    # sample_id_2_week for finding out Weeks using Sample ID as keys
-    sample_id_2_city = {}    # sample_id_2_city for finding out Cities using Sample ID as keys
-    sample_id_2_province = {}    # sample_id_2_province for finding out Provinces using Sample ID as keys
-    sample_id_2_dates = {}   # sample_id_2_dates for actual calendar dates using Sample ID as keys
-    sample_id_2_max_temp = {} # sample_id_2_max_temp for maximum daily temperature using Sample ID as keys
-    sample_id_2_min_temp = {} # sample_id_2_min_temp for minimum daily temperature using Sample ID as keys
-    sample_id_2_mean_temp = {}  # sample_id_2_mean_temp for average daily temperature using Sample ID as keys
-    sample_id_2_percipitation = {}  # sample_id_2_percipitation for daily total percipitation using Sample ID as keys
-    sample_id_2_wind_dir = {}   # sample_id_2_wind_dir for the wind direction using Sample ID as keys
-    sample_id_2_max_wind_spd = {}  # sample_id_2_max_wind_spd for daily maximum wind speed using Sample ID as keys
-    aTester = {}
+    sff_mid_2_sample_id = {} # sff_mid_2_Sample for finding out Sample ID using sff_mid as keys
+    sample_ids_2_meta_info = defaultdict(list) # a hashtable using the ID of the samples as key to store: collector, year, week, locations, and climate information as value (in a list)
 
     #Begin Reading CSV File
     with open(meta_data, "rb") as meta_data_file:
@@ -47,47 +35,49 @@ def meta_reader(meta_data):
         for row in meta_data_reader:
             sff_mid = str(row[3]) + "." + 'MID' + str(row[6])
             sff_mid_2_sample_id[sff_mid] = row[7] #Generate the sff_mid number using row[3] and row[6]
-            sample_id_2_collector[row[7]] = row[8]
-            sample_id_2_year[row[7]] = row[9]
-            sample_id_2_week[row[7]] = row[10]
-            sample_id_2_city[row[7]] = row[13]
-            sample_id_2_province[row[7]] = row[14]
-            aTester.setdefault(row[7], []).append(row[8])
-            aTester.setdefault(row[7], []).append(row[9])
-            aTester.setdefault(row[7], []).append(row[10])
-            aTester.setdefault(row[7], []).append(row[13])
-            aTester.setdefault(row[7], []).append(row[14])
+
+            a_sample_id = row[7]
+            a_collector = row[8]
+            a_year = row[9]
+            a_week = row[10]
+            a_city = row[13]
+            a_province = row[14]
             try:
-                sample_id_2_dates[row[7]] = str(row[33]) + '-' + str(row[9])
+                a_date = str(row[33]) + '-' + str(row[9])
             except IndexError:
-                pass
+                a_date = None
             try:
-                sample_id_2_max_temp[row[7]] = row[34]
+                a_max_temp = row[34]
             except IndexError:
-                pass
+                a_max_temp = None
             try:
-                sample_id_2_min_temp[row[7]] = row[35]
+                a_min_temp = row[35]
             except IndexError:
-                pass
+                a_min_temp = None
             try:
-                sample_id_2_mean_temp[row[7]] = row[36]
+                a_mean_temp = row[36]
             except IndexError:
-                pass
+                a_mean_temp = None
             try:
-                sample_id_2_percipitation[row[7]] = row[41]
+                a_percipitation = row[41]
             except IndexError:
-                pass
+                a_percipitation = None
             try:
-                sample_id_2_wind_dir[row[7]] = row[43]
+                a_wind_dir = row[43]
             except IndexError:
-                pass
+                a_wind_dir = None
             try:
-                sample_id_2_max_wind_spd[row[7]] = row[44]
+                a_max_wind_spd = row[44]
             except IndexError:
-                pass
+                a_max_wind_spd = None
+
+            a_row = [a_collector, a_year, a_week, a_city, a_province, a_date, a_max_temp, a_min_temp, a_mean_temp, a_percipitation, a_wind_dir, a_max_wind_spd]
             
+            if a_sample_id not in sample_ids_2_meta_info:
+                sample_ids_2_meta_info[a_sample_id].extend(a_row) 
+                        
         
-    return sff_mid_2_sample_id, sample_id_2_collector, sample_id_2_year, sample_id_2_week, sample_id_2_city, sample_id_2_province, sample_id_2_dates, sample_id_2_max_temp, sample_id_2_min_temp, sample_id_2_mean_temp, sample_id_2_percipitation, sample_id_2_wind_dir, sample_id_2_max_wind_spd
+    return sff_mid_2_sample_id, sample_ids_2_meta_info
 
 #The summary_log_reader function reads alll the summary log files row by row,
 # When it finds a row with the matching rank and name, it stores the name of the SFF.MID number to a list
@@ -234,7 +224,7 @@ def rm_redundant_meta(aDict, aList, aList2):
 # It produces a CSV file that compare the oligo fishing and automated identification result.
 # It takes the rank, name, the summary logs, the metaData file, the OFP output
 # String, string, summary log files, metaData File, OFP fasta text file --> CSV file or DataFrame
-def analyzer(rank, name, path_to_summary_logs, path_to_metaData, path_to_ofr_result, rm_redundant):
+def analyzer(rank, name, path_to_summary_logs, path_to_meta_data, path_to_ofr_result, rm_redundant):
 
     startTime = datetime.now()
     print 'Now opening all the summary logs and store to memory'
@@ -242,62 +232,42 @@ def analyzer(rank, name, path_to_summary_logs, path_to_metaData, path_to_ofr_res
     summary_logs = summary_log_reader(path_to_summary_logs, name, rank)
     #Call oligoFishingReader to read the results from the oligo fishing experiment data
     list_of_orf_elements = ofp_reader(path_to_ofr_result) 
-    multi_dicts = meta_reader(path_to_metaData) 
-    meta_sample_ids = multi_dicts[0]
-    meta_collectors = multi_dicts[1]
-    meta_years = multi_dicts[2]
-    meta_weeks = multi_dicts[3]
-    metaCities = multi_dicts[4]
-    meta_provinces = multi_dicts[5]
-    meta_dates = multi_dicts[6]
-    meta_max_temp = multi_dicts[7]
-    meta_min_temp = multi_dicts[8]
-    meta_mean_temp = multi_dicts[9]
-    meta_percipitation = multi_dicts[10]
-    meta_wind_dir = multi_dicts[11]
-    meta_max_wind_spd = multi_dicts[12]
+    meta_sample_ids, sample_ids_2_meta_info = meta_reader(path_to_meta_data) 
+
 
     # Convert the list of sff.mid number from the summary_log_reader function to a list of Sample IDs
-    listOfAutoElements = []
+    list_of_auto_elements = []
     for i in summary_logs:
         try: 
             aSampleID = meta_sample_ids[i]
-            listOfAutoElements.append(aSampleID)   
+            list_of_auto_elements.append(aSampleID)   
         except KeyError:
             pass
 
     # Control if the Samples that don't have the indicates organism should be included in the final output data sheet
     if rm_redundant == 'Yes':
-        meta_collectors = rm_redundant_meta(meta_collectors, listOfAutoElements, list_of_orf_elements)
-        meta_years = rm_redundant_meta(meta_years, listOfAutoElements, list_of_orf_elements)
-        meta_weeks = rm_redundant_meta(meta_weeks, listOfAutoElements, list_of_orf_elements)
-        metaCities = rm_redundant_meta(metaCities, listOfAutoElements, list_of_orf_elements)
-        meta_provinces = rm_redundant_meta(meta_provinces, listOfAutoElements, list_of_orf_elements)
-        meta_dates = rm_redundant_meta(meta_dates, listOfAutoElements, list_of_orf_elements)
-        meta_max_temp = rm_redundant_meta(meta_max_temp, listOfAutoElements, list_of_orf_elements)
-        meta_min_temp = rm_redundant_meta(meta_min_temp, listOfAutoElements, list_of_orf_elements)
-        meta_mean_temp = rm_redundant_meta(meta_mean_temp, listOfAutoElements, list_of_orf_elements)
-        meta_percipitation = rm_redundant_meta(meta_percipitation, listOfAutoElements, list_of_orf_elements)
-        meta_wind_dir = rm_redundant_meta(meta_wind_dir, listOfAutoElements, list_of_orf_elements)
-        meta_max_wind_spd = rm_redundant_meta(meta_max_wind_spd, listOfAutoElements, list_of_orf_elements)
+        sample_ids_2_meta_info = rm_redundant_meta(sample_ids_2_meta_info, list_of_auto_elements, list_of_orf_elements)
     else:
         pass
 
     # Count the appearance of each element in the list of samples IDs and output the results into dictionaries
     num_of_ofp_elements = Counter(list_of_orf_elements)
-    num_of_auto_elements = Counter(listOfAutoElements)
+    num_of_auto_elements = Counter(list_of_auto_elements)
     
     # Converting all the data into a dataframe using pandas
     print 'Generating DataFrame and CSV output...'
-    temp = {'Provinces': pd.Series(meta_provinces), 'Cities': pd.Series(metaCities), 'Collectors': pd.Series(meta_collectors), 'Years': pd.Series(meta_years), 'Weeks': pd.Series(meta_weeks), 'Dates': pd.Series(meta_dates), 'Max Temperature': pd.Series(meta_max_temp), 'Min Temperature': pd.Series(meta_min_temp), 'Mean Temperature': pd.Series(meta_mean_temp), 'Total Percipitation': pd.Series(meta_percipitation), 'Wind Direction': pd.Series(meta_wind_dir), 'Max Wind Speed': pd.Series(meta_max_wind_spd), 'Auto ID': pd.Series(num_of_auto_elements), 'OFP Result': pd.Series(num_of_ofp_elements)}
-    df = pd.DataFrame(temp, columns=['Provinces', 'Cities', 'Collectors', 'Years', 'Weeks', 'Dates', 'Max Temperature', 'Min Temperature', 'Mean Temperature', 'Total Percipitation', 'Wind Direction', 'Max Wind Speed', 'Auto ID', 'OFP Result'])
-    df = df.fillna(value=0)
-    df['Log(Auto ID + 1)'] = df['Auto ID'].apply(np.log1p)
-    df['Log(OFP Result + 1)'] = df['OFP Result'].apply(np.log1p)
+    meta_df = pd.DataFrame(sample_ids_2_meta_info, index=['Provinces', 'Cities', 'Collectors', 'Years', 'Weeks', 'Dates', 'Max Temperature', 'Min Temperature', 'Mean Temperature', 'Total Percipitation', 'Wind Direction', 'Max Wind Speed'])
+    meta_df = meta_df.transpose()
+    result_dict = {'Auto ID': pd.Series(num_of_auto_elements), 'OFP Result': pd.Series(num_of_ofp_elements)}
+    result_df = pd.DataFrame(result_dict)
+    final_df = meta_df.join(result_df)
+    final_df = final_df.fillna(value=0)
+    final_df['Log(Auto ID + 1)'] = final_df['Auto ID'].apply(np.log1p)
+    final_df['Log(OFP Result + 1)'] = final_df['OFP Result'].apply(np.log1p)
     file_name = rank + '_' + name + '_' + 'Auto vs OFP.csv'
-    df.to_csv(file_name) #Output: Writing the dataframe to a CSV file
+    final_df.to_csv(file_name) #Output: Writing the dataframe to a CSV file
     print 'Took', (datetime.now()-startTime)
-    return df
+    return sample_ids_2_meta_info
         
     
 

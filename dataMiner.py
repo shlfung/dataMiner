@@ -1,7 +1,8 @@
 # By Stephen Fung
+# stephen.fung@agr.gc.ca
 # The script reads the Oligo Fishing Pipeline (OFP) result and Automated Identification (Auto ID) result based on a given rank and a name.
 # It outputs the Auto ID and OFP data and return the climate, geography...etc in a csv file that can be opened in MS Excel by the biologists
-# The script requires scipy, numpy, biopython and pandas to be installed with python 2.7
+# The script requires numpy, biopython and pandas to be installed with python 2.7
 
 
 import csv
@@ -36,41 +37,42 @@ def meta_reader(meta_data):
             sff_mid = str(row[3]) + "." + 'MID' + str(row[6])
             sff_mid_2_sample_id[sff_mid] = row[7] #Generate the sff_mid number using row[3] and row[6]
 
-            a_sample_id = row[7]
-            a_collector = row[8]
-            a_year = row[9]
-            a_week = row[10]
-            a_city = row[13]
-            a_province = row[14]
+            a_sample_id = row[7]  #Sample ID of each sample
+            a_collector = row[8]    #The collector used for the sample
+            a_year = row[9] # The year the sample was collected
+            a_week = row[10] # The week number the sample was collected
+            a_city = row[13]    # The city the sample was collected
+            a_province = row[14] # The province the sample was collected
             try:
-                a_date = str(row[33]) + '-' + str(row[9])
-            except IndexError:
+                a_date = str(row[33]) + '-' + str(row[9])  #Using row[33] and row[9] to construct the actual date of the sample
+            except IndexError:  # Some cells can be empty
                 a_date = None
             try:
-                a_max_temp = row[34]
+                a_max_temp = row[34]    # Maximum Temperature
             except IndexError:
                 a_max_temp = None
             try:
-                a_min_temp = row[35]
+                a_min_temp = row[35]    # Minimum Temperature
             except IndexError:
                 a_min_temp = None
             try:
-                a_mean_temp = row[36]
+                a_mean_temp = row[36]   # Mean Temperature
             except IndexError:
                 a_mean_temp = None
             try:
-                a_percipitation = row[41]
+                a_percipitation = row[41]   # Percipitation
             except IndexError:
                 a_percipitation = None
             try:
-                a_wind_dir = row[43]
+                a_wind_dir = row[43]    # Wind Direction
             except IndexError:
                 a_wind_dir = None
             try:
-                a_max_wind_spd = row[44]
+                a_max_wind_spd = row[44]    # Maximum Wind Speed of the Date
             except IndexError:
                 a_max_wind_spd = None
 
+            # Group the information to a list and add it to the defaultdict
             a_row = [a_collector, a_year, a_week, a_city, a_province, a_date, a_max_temp, a_min_temp, a_mean_temp, a_percipitation, a_wind_dir, a_max_wind_spd]
             
             if a_sample_id not in sample_ids_2_meta_info:
@@ -90,19 +92,20 @@ def summary_log_reader(summary_logs, name, rank):
 
     # Read each file of the summary log
     for aFile in list_Of_summary_logs:
-        file_name = str(aFile)
+        file_name = str(a_file)
         print 'Reading', file_name #Tells the user which file it is reading right now.
         sep = '.'
         mid_num = file_name.split(sep)[2]
-        mid_num = str(mid_num).strip()   #Extract the SFF.MID number from the file name
-        with open(aFile, "rb") as a_summary_log:
+        mid_num = str(mid_num).strip()   #Extract the mid number from the file name
+        with open(a_file, "rb") as a_summary_log:
             aReader = csv.reader(a_summary_log, delimiter = "\t")
             # Check if each row in a file has a matching name and rank with the input from the user
+            # Store the sff mid number to all_summary_logs each time the name of the organism appears in the row
             for row in aReader:
                 if rank == 'kingdom':
                     try:
                         if row[13] == name:
-                            aName = str(row[0]).strip() + '.' + mid_num
+                            aName = str(row[0]).strip() + '.' + mid_num # Generate the sff mid number here
                             all_summary_logs.append(aName)
                             print 'Found', row[13]
                             print 'Found', len(all_summary_logs), 'sequences'
@@ -235,12 +238,12 @@ def analyzer(rank, name, path_to_summary_logs, path_to_meta_data, path_to_ofr_re
     meta_sample_ids, sample_ids_2_meta_info = meta_reader(path_to_meta_data) 
 
 
-    # Convert the list of sff.mid number from the summary_log_reader function to a list of Sample IDs
+    # Convert the list of sff mid number from the summary_log_reader function to a list of Sample IDs
     list_of_auto_elements = []
     for i in summary_logs:
         try: 
-            aSampleID = meta_sample_ids[i]
-            list_of_auto_elements.append(aSampleID)   
+            a_sample_id = meta_sample_ids[i]
+            list_of_auto_elements.append(a_sample_id)   
         except KeyError:
             pass
 
@@ -261,19 +264,19 @@ def analyzer(rank, name, path_to_summary_logs, path_to_meta_data, path_to_ofr_re
     result_dict = {'Auto ID': pd.Series(num_of_auto_elements), 'OFP Result': pd.Series(num_of_ofp_elements)}
     result_df = pd.DataFrame(result_dict)
     final_df = meta_df.join(result_df)
-    final_df = final_df.fillna(value=0)
-    final_df['Log(Auto ID + 1)'] = final_df['Auto ID'].apply(np.log1p)
+    final_df = final_df.fillna(value=0) #Combine the meta dataframe with the result dataframe
+    final_df['Log(Auto ID + 1)'] = final_df['Auto ID'].apply(np.log1p) #Apply log10 to the counts
     final_df['Log(OFP Result + 1)'] = final_df['OFP Result'].apply(np.log1p)
     file_name = rank + '_' + name + '_' + 'Auto vs OFP.csv'
     final_df.to_csv(file_name) #Output: Writing the dataframe to a CSV file
     print 'Took', (datetime.now()-startTime)
-    return sample_ids_2_meta_info
+    return final_df
         
     
 
 if __name__=='__main__':
-##    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-    item1 = analyzer('species', 'Staphylococcus aureus', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_aureus.Staphylococcus_aureus.txt.withmeta.fna.fasta', 'No')
+    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+##    item1 = analyzer('species', 'Staphylococcus aureus', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_aureus.Staphylococcus_aureus.txt.withmeta.fna.fasta', 'No')
 ##    item2 = analyzer('species', 'Bacillus anthracis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
 ##    item3 = analyzer('species', 'Bacillus herbersteinensis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
 ##    item4 = analyzer('species', 'Staphylococcus epidermidis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_epidermidis.Staphylococcus_epidermidis.txt.withmeta.fna.fasta', 'No')

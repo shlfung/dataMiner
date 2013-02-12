@@ -91,7 +91,7 @@ def summary_log_reader(summary_logs, name, rank):
     all_summary_logs = [] #This list store 
 
     # Read each file of the summary log
-    for aFile in list_Of_summary_logs:
+    for a_file in list_Of_summary_logs:
         file_name = str(a_file)
         print 'Reading', file_name #Tells the user which file it is reading right now.
         sep = '.'
@@ -259,7 +259,7 @@ def analyzer(rank, name, path_to_summary_logs, path_to_meta_data, path_to_ofr_re
     
     # Converting all the data into a dataframe using pandas
     print 'Generating DataFrame and CSV output...'
-    meta_df = pd.DataFrame(sample_ids_2_meta_info, index=['Provinces', 'Cities', 'Collectors', 'Years', 'Weeks', 'Dates', 'Max Temperature', 'Min Temperature', 'Mean Temperature', 'Total Percipitation', 'Wind Direction', 'Max Wind Speed'])
+    meta_df = pd.DataFrame(sample_ids_2_meta_info, index=['Collector', 'Year', 'Week', 'Cities', 'Provinces', 'Dates', 'Max Temperature', 'Min Temperature', 'Mean Temperature', 'Total Percipitation', 'Wind Direction', 'Max Wind Speed'])
     meta_df = meta_df.transpose()
     result_dict = {'Auto ID': pd.Series(num_of_auto_elements), 'OFP Result': pd.Series(num_of_ofp_elements)}
     result_df = pd.DataFrame(result_dict)
@@ -275,8 +275,8 @@ def analyzer(rank, name, path_to_summary_logs, path_to_meta_data, path_to_ofr_re
     
 
 if __name__=='__main__':
-    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-##    item1 = analyzer('species', 'Staphylococcus aureus', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_aureus.Staphylococcus_aureus.txt.withmeta.fna.fasta', 'No')
+##    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+    item1 = analyzer('species', 'Staphylococcus aureus', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_aureus.Staphylococcus_aureus.txt.withmeta.fna.fasta', 'No')
 ##    item2 = analyzer('species', 'Bacillus anthracis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
 ##    item3 = analyzer('species', 'Bacillus herbersteinensis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
 ##    item4 = analyzer('species', 'Staphylococcus epidermidis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_epidermidis.Staphylococcus_epidermidis.txt.withmeta.fna.fasta', 'No')

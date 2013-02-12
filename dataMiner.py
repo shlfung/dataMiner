@@ -275,8 +275,8 @@ def analyzer(rank, name, path_to_summary_logs, path_to_meta_data, path_to_ofr_re
     
 
 if __name__=='__main__':
-##    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
-    item1 = analyzer('species', 'Staphylococcus aureus', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_aureus.Staphylococcus_aureus.txt.withmeta.fna.fasta', 'No')
+    analyzer(sys.argv[0], sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5])
+##    item1 = analyzer('species', 'Staphylococcus aureus', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_aureus.Staphylococcus_aureus.txt.withmeta.fna.fasta', 'No')
 ##    item2 = analyzer('species', 'Bacillus anthracis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
 ##    item3 = analyzer('species', 'Bacillus herbersteinensis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Bacillus_anthracis_cand1.Bacillus_anthracis_cand1.txt.withmeta.fna.fasta', 'No')
 ##    item4 = analyzer('species', 'Staphylococcus epidermidis', './rs75_Summary_Log/*.summarylog', './input/454_sample_summary_with_climate.csv', './input/Staphylococcus_epidermidis.Staphylococcus_epidermidis.txt.withmeta.fna.fasta', 'No')

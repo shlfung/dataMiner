@@ -3,7 +3,7 @@
 # The script reads the Oligo Fishing Pipeline (OFP) result and Automated Identification (Auto ID) result based on a given rank and a name.
 # It outputs the Auto ID and OFP data and return the climate, geography...etc in a csv file that can be opened in MS Excel by the biologists
 # The script requires numpy, biopython and pandas to be installed with python 2.7
-
+#Testing 2013 Fall
 
 import csv
 import re
